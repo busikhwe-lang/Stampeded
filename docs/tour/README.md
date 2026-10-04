@@ -1,8 +1,8 @@
 # Stampeded! in eight short tours
 
-Each tour takes under five minutes and stands on its own. They are written for someone who
-reviews code for a living and wants to know what this tool does that a web diff does not -
-not for someone who needs a pull request explained.
+Each tour takes under five minutes and stands on its own, so pick whichever one you're
+curious about. They assume you review code regularly and want to see what this tool gives
+you that a web diff doesn't.
 
 Every screenshot was taken in
 [christophwille/stampeded-demo](https://github.com/christophwille/stampeded-demo), a small C#

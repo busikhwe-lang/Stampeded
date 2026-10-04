@@ -1,17 +1,17 @@
 # Tour 4: Comment and submit
 
-Comments are written where the code is and stay local until you submit. Nothing reaches the
-pull request one remark at a time.
+You write comments right where the code is, and they stay on your machine until you submit.
+The author gets one review, not a drip of notifications.
 
 Open pull request #1 of the demo repository and go to `src/Corral/PriceCalculator.cs`.
 
-## 1. What has been said
+## 1. Existing threads
 
 ![A posted thread between the lines it is about](images/04-01-thread.png)
 
-Threads from the host sit in the diff under the line they belong to, with Reply and Resolve
-on them. The Explorer counts them per file: amber while something is open, green once
-everything is settled.
+Threads from the host sit in the diff, under the line they're about, with Reply and Resolve
+right there. The Explorer shows a count per file: amber while something is still open, green
+once it's all settled.
 
 ## 2. Comment at the caret
 
@@ -19,57 +19,56 @@ Put the caret on a line and press `c`.
 
 ![The comment editor on a line](images/04-02-comment-editor.png)
 
-`Ctrl+Enter` saves, `Esc` closes. The editor does not go away when you click into the code
-behind it once it holds text.
+`Ctrl+Enter` saves, `Esc` closes. Once you've typed something, clicking into the code behind
+the editor won't dismiss it and take your text with it.
 
-## 3. A draft
+## 3. Drafts
 
 ![The draft, in place](images/04-03-draft.png)
 
-The draft shows where it will be posted and survives closing the app. Edit and delete are on
-it.
+The draft sits where it will be posted, with Edit and Delete on it, and it's still there
+after you close the app.
 
 ## 4. Suggest a change
 
-`c` on another line, then **Suggest a change**: the editor is prefilled with a suggestion
-block holding the line, for you to rewrite.
+`c` on another line, then **Suggest a change**. The editor is prefilled with a suggestion
+block holding that line, ready for you to rewrite.
 
 ![A suggestion being written](images/04-04-suggestion.png)
 
-On GitHub the author can commit a suggestion with one button. On Azure DevOps, which has no
-such thing, it posts as a code block.
+On GitHub the author can commit a suggestion with one click. Azure DevOps has no such thing,
+so there it posts as a plain code block.
 
 ## 5. Reply
 
-**Reply** on the posted thread.
+Click **Reply** on the posted thread.
 
 ![A reply and a suggestion, both drafts](images/04-05-reply.png)
 
-A reply is a draft too.
+Replies are drafts too.
 
-## 6. Everything at once
+## 6. The Comments pane and the review page
 
-The **Comments** pane lists drafts and posted comments of the whole review; double-click to
-go to one.
+The **Comments** pane lists every draft and posted comment of the review. Double-click one to
+go to it.
 
 ![The Comments pane](images/04-06-comments-pane.png)
 
-**Review > Approve / Request Changes...** opens the review page: every comment quoted with
-the code around it, as the author will meet it.
+**Review > Approve / Request Changes...** opens the review page: each comment quoted with the
+code around it, the way the author will see it. The summary goes in the box at the bottom.
 
 ![The review page before submitting](images/04-07-review.png)
-
-Read your own review once before it goes out. This is the place for the summary, too.
 
 ## 7. Submit
 
 ![The review after submitting](images/04-08-submitted.png)
 
 **Comment** posts the three drafts as one review. **Approve** and **Request Changes** are
-greyed out in the picture because it was taken by the pull request's author, and GitHub takes
-neither verdict from the author. On somebody else's pull request they are live.
+greyed out in this picture because it was taken by the pull request's own author, and GitHub
+doesn't accept either verdict from the author. On somebody else's pull request they're live.
 
-A draft on a line the host would reject - a line outside the diff, a generated file - is kept
-local rather than failing the whole review, and the result line says how many were.
+If a draft sits on a line the host would reject - outside the diff, or in a generated file -
+it's kept as a local draft instead of sinking the whole review, and the result line tells you
+how many were.
 
 Next: [Come back after a force push](05-after-a-force-push.md)
