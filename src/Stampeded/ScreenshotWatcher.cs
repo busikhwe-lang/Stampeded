@@ -480,6 +480,11 @@ static class ScreenshotWatcher
 						App.Workspace?.NavigateToFileLineAsync(parts[1], gotoLine, oldSide: false, record: false).HandleExceptions();
 				}
 				var size = new Avalonia.PixelSize((int)window.Bounds.Width, (int)window.Bounds.Height);
+				// A command above may have invalidated layout in this same tick - a theme switch
+				// does, for every text block. Rendering before the layout pass draws a text block
+				// built from inlines as empty, and its run cache then keeps the empty result for
+				// good: the capture would not just show the blank rows, it would cause them.
+				window.UpdateLayout();
 				using var bitmap = new RenderTargetBitmap(size, new Avalonia.Vector(96, 96));
 				bitmap.Render(window);
 #pragma warning disable CS0618 // default PNG encoding is all this debug utility needs

@@ -34,13 +34,20 @@ public static class Images
 	// every icon one that lifts that single colour and leaves the coloured parts alone.
 	const string DarkCss = "[fill=\"#202020\"] { fill: #D4D4D4; } [stroke=\"#202020\"] { stroke: #D4D4D4; }";
 
+	// The same rule restating the colour the icons already have. Not null: an SvgImage whose
+	// stylesheet is cleared falls back to the one its source was last loaded with, so an icon
+	// that has been dark once would stay light-on-light.
+	const string LightCss = "[fill=\"#202020\"] { fill: #202020; } [stroke=\"#202020\"] { stroke: #202020; }";
+
+	static string ThemeCss => Themes.ThemeManager.Current.IsDarkTheme ? DarkCss : LightCss;
+
 	static readonly List<SvgImage> loaded = [];
 
 	static Images()
 	{
 		Themes.ThemeManager.Current.ThemeChanged += (_, _) => {
 			foreach (var image in loaded)
-				image.Css = Themes.ThemeManager.Current.IsDarkTheme ? DarkCss : null;
+				image.Css = ThemeCss;
 		};
 	}
 
@@ -48,7 +55,7 @@ public static class Images
 	{
 		var image = new SvgImage {
 			Source = SvgSource.Load(AssetBase + name + ".svg", null),
-			Css = Themes.ThemeManager.Current.IsDarkTheme ? DarkCss : null,
+			Css = ThemeCss,
 		};
 		loaded.Add(image);
 		return image;
