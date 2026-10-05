@@ -428,26 +428,28 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 		var comments = await PrCommentsAsync(number, ct);
 		var posted = new List<PostedComment>();
 		foreach (var comment in comments)
-			AddComment(posted, comment, inheritedAnchor: null);
+			AddComment(posted, comment.Comment, comment.Anchor);
 		CliLog.Write("bitbucket", $"read {comments.Count} pull request comment root(s), {posted.Count} anchored comment(s)");
 		return posted;
 	}
 
-	async Task<IReadOnlyList<JsonElement>> PrCommentsAsync(int number, CancellationToken ct)
+	async Task<IReadOnlyList<BitbucketComment>> PrCommentsAsync(int number, CancellationToken ct)
 	{
-		var byId = new Dictionary<long, JsonElement>();
+		var byId = new Dictionary<long, BitbucketComment>();
 		foreach (var activity in await PageAsync($"{ApiBase}/pull-requests/{number}/activities", ct))
 			if (Node(activity, "comment") is { ValueKind: JsonValueKind.Object } comment)
-				Add(comment);
+				Add(comment, Node(activity, "commentAnchor") ?? Node(activity, "anchor"));
 		return [.. byId.Values];
 
-		void Add(JsonElement comment)
+		void Add(JsonElement comment, JsonElement? anchor)
 		{
 			long id = Long(comment, "id");
 			if (id != 0)
-				byId[id] = comment;
+				byId[id] = new BitbucketComment(comment.Clone(), anchor?.Clone());
 		}
 	}
+
+	sealed record BitbucketComment(JsonElement Comment, JsonElement? Anchor);
 
 	void AddComment(List<PostedComment> posted, JsonElement comment, JsonElement? inheritedAnchor)
 	{
@@ -505,8 +507,9 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 	{
 		var comments = await PrCommentsAsync(number, ct);
 		var resolutions = new List<ThreadResolution>();
-		foreach (var comment in comments)
+		foreach (var entry in comments)
 		{
+			var comment = entry.Comment;
 			long id = Long(comment, "id");
 			if (id == 0)
 				continue;
