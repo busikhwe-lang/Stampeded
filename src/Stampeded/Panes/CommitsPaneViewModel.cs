@@ -58,6 +58,8 @@ public class CommitsPaneViewModel : Tool
 	public ObservableCollection<CommitRow> Commits { get; } = [];
 	public ObservableCollection<CommitFileRow> CommitFiles { get; } = [];
 	public CommitsState State { get; } = new();
+	public string HostName => workspace.HostName;
+	public bool CanReviewCommits => workspace.Scopes.CanEnterCommit;
 
 	public CommitsPaneViewModel(ReviewWorkspace workspace)
 	{
@@ -163,5 +165,17 @@ public class CommitsPaneViewModel : Tool
 			workspace.NavigateToFileLineAsync(row.Path, 1, oldSide: false, record: true).HandleExceptions();
 		else
 			workspace.OpenHistoricalDiffAsync(row.Sha, row.Path).HandleExceptions();
+	}
+
+	public void ReviewCommit(CommitRow row)
+	{
+		if (!row.IsUncommitted && row.Commit.Sha.Length > 0)
+			workspace.Scopes.GoToCommitAsync(row.Commit.Sha).HandleExceptions();
+	}
+
+	public void OpenCommitOnHost(CommitRow row)
+	{
+		if (!row.IsUncommitted && row.Commit.Sha.Length > 0)
+			workspace.OpenCommitOnHostAsync(row.Commit.Sha).HandleExceptions();
 	}
 }

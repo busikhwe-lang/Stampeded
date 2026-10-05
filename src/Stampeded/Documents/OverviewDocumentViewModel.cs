@@ -250,7 +250,11 @@ public class OverviewDocumentViewModel : Document
 
 	public void EnterSinceLastPass() => workspace.Scopes.EnterSinceLastPassAsync().HandleExceptions();
 
+	public void FirstCommitScope() => workspace.Scopes.FirstCommitAsync().HandleExceptions();
+
 	public void StepCommitScope(int direction) => workspace.Scopes.StepCommitAsync(direction).HandleExceptions();
+
+	public void LastCommitScope() => workspace.Scopes.LastCommitAsync().HandleExceptions();
 
 	public void ExitCommitScope() => workspace.Scopes.ExitAsync().HandleExceptions();
 

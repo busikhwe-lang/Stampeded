@@ -100,6 +100,10 @@
               IsVisible="{Binding State.InScope}">
         <DockPanel>
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+            <Button Classes="tool" Click="OnFirstCommit" IsVisible="{Binding State.InCommitScope}"
+                    ToolTip.Tip="First commit">
+              <TextBlock Text="|&lt;" FontFamily="monospace" />
+            </Button>
             <Button Classes="tool" Click="OnPreviousCommit" IsVisible="{Binding State.InCommitScope}"
                     ToolTip.Tip="Previous commit  ( Ctrl+[ )">
               <Image Source="{x:Static app:Images.Previous}" />
@@ -107,6 +111,10 @@
             <Button Classes="tool" Click="OnNextCommit" IsVisible="{Binding State.InCommitScope}"
                     ToolTip.Tip="Next commit  ( Ctrl+] )">
               <Image Source="{x:Static app:Images.Next}" />
+            </Button>
+            <Button Classes="tool" Click="OnLastCommit" IsVisible="{Binding State.InCommitScope}"
+                    ToolTip.Tip="Last commit">
+              <TextBlock Text="&gt;|" FontFamily="monospace" />
             </Button>
             <Button Classes="tool" Click="OnExitCommitScope"
                     ToolTip.Tip="Whole change - stop reading a part of it and read it as one diff">

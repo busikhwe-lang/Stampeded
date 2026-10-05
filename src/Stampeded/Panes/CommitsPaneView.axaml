@@ -12,6 +12,17 @@
       <Grid Grid.Row="0" ColumnDefinitions="3*,4,2*">
         <ListBox Grid.Column="0" x:Name="CommitList" ItemsSource="{Binding Commits}"
                  SelectionChanged="OnCommitSelected" FontFamily="monospace" FontSize="12">
+          <ListBox.ContextMenu>
+            <ContextMenu Opening="OnCommitMenuOpening">
+              <MenuItem Header="Copy Commit Hash" x:Name="CopyHashItem" Click="OnCopyCommitHash" />
+              <MenuItem Header="Copy Short Hash" x:Name="CopyShortHashItem" Click="OnCopyShortHash" />
+              <MenuItem Header="Copy Subject" x:Name="CopySubjectItem" Click="OnCopySubject" />
+              <MenuItem Header="Copy Message" x:Name="CopyMessageItem" Click="OnCopyMessage" />
+              <Separator />
+              <MenuItem Header="Review This Commit" x:Name="ReviewCommitItem" Click="OnReviewCommit" />
+              <MenuItem Header="{Binding HostName, StringFormat='Open on {0}'}" x:Name="OpenCommitOnHostItem" Click="OnOpenCommitOnHost" />
+            </ContextMenu>
+          </ListBox.ContextMenu>
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="panes:CommitRow">
               <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"

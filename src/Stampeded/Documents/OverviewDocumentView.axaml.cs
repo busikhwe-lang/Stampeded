@@ -78,9 +78,13 @@ public partial class OverviewDocumentView : UserControl
 	void OnPassBaselineDropdown(object? sender, RoutedEventArgs e)
 		=> Panes.PassBaselineFlyout.ShowFor(sender);
 
+	void OnFirstCommit(object? sender, RoutedEventArgs e) => Vm?.FirstCommitScope();
+
 	void OnPreviousCommit(object? sender, RoutedEventArgs e) => Vm?.StepCommitScope(-1);
 
 	void OnNextCommit(object? sender, RoutedEventArgs e) => Vm?.StepCommitScope(1);
+
+	void OnLastCommit(object? sender, RoutedEventArgs e) => Vm?.LastCommitScope();
 
 	void OnExitCommitScope(object? sender, RoutedEventArgs e) => Vm?.ExitCommitScope();
 

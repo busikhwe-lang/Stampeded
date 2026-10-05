@@ -9,6 +9,9 @@ namespace Stampeded;
 
 public partial class MainWindow : Window
 {
+	bool closeAfterShutdown;
+	bool shutdownStarted;
+
 	// The menu items this file has to reach: the ones whose state is not a binding away, and the
 	// two whose submenu is built when it opens. A menu item is a model object rather than a
 	// control, so it cannot carry an x:Name and Avalonia generates no field for one - what names
@@ -44,6 +47,7 @@ public partial class MainWindow : Window
 		darkThemeItem = Named("Dark");
 		WindowPlacement.Attach(this);
 		ScreenshotWatcher.Attach(this);
+		Closing += OnClosing;
 		// A menu about to be shown is the only moment its per-document state is not stale, and
 		// each platform says so differently: the exported macOS menu asks the model for an
 		// update, while the bar drawn inside the window raises a routed event from the item that
@@ -68,6 +72,39 @@ public partial class MainWindow : Window
 			review.Items.RemoveAt(index);
 			if (index > 0 && review.Items[index - 1] is NativeMenuItemSeparator separator)
 				review.Items.Remove(separator);
+		}
+	}
+
+	async void OnClosing(object? sender, WindowClosingEventArgs e)
+	{
+		if (closeAfterShutdown || App.Workspace is null)
+			return;
+		e.Cancel = true;
+		if (shutdownStarted)
+			return;
+		shutdownStarted = true;
+		if (DataContext is MainViewModel vm)
+		{
+			vm.ShutdownText = "Stopping background work and language servers...";
+			vm.IsShuttingDown = true;
+		}
+		Core.Infra.CliLog.Write("app", "shutdown requested; showing cleanup progress");
+		await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
+		try
+		{
+			if (App.Workspace is { } workspace)
+			{
+				if (DataContext is MainViewModel vm2)
+					vm2.ShutdownText = "Stopping servers and removing review worktrees...";
+				await workspace.ShutdownAsync(cleanupWorktrees: true, cleanupTimeout: TimeSpan.FromSeconds(10));
+				App.Workspace = null;
+			}
+		}
+		finally
+		{
+			Core.Infra.CliLog.Write("app", "shutdown cleanup finished; closing window");
+			closeAfterShutdown = true;
+			Close();
 		}
 	}
 
@@ -366,8 +403,10 @@ public partial class MainWindow : Window
 
 	// The overview page's commands, so they are reachable without going back to that tab.
 	void OnEnterCommitScope(object? s, EventArgs e) => App.Workspace?.Scopes.EnterCommitAsync().HandleExceptions();
+	void OnFirstCommit(object? s, EventArgs e) => App.Workspace?.Scopes.FirstCommitAsync().HandleExceptions();
 	void OnNextCommit(object? s, EventArgs e) => App.Workspace?.Scopes.StepCommitAsync(1).HandleExceptions();
 	void OnPreviousCommit(object? s, EventArgs e) => App.Workspace?.Scopes.StepCommitAsync(-1).HandleExceptions();
+	void OnLastCommit(object? s, EventArgs e) => App.Workspace?.Scopes.LastCommitAsync().HandleExceptions();
 	void OnExitCommitScope(object? s, EventArgs e) => App.Workspace?.Scopes.ExitAsync().HandleExceptions();
 	void OnOpenVsCode(object? s, EventArgs e) => App.Workspace?.OpenInVsCodeAsync(oldSide: false).HandleExceptions();
 	void OnOpenFixtures(object? s, EventArgs e) => App.Workspace?.OpenAffectedFixturesInILSpyAsync().HandleExceptions();

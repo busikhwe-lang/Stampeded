@@ -44,7 +44,8 @@ public class App : Application
 			Workspace?.PostStatus($"Opening {path} cancelled: no pull-request provider chosen.");
 			return;
 		}
-		Workspace?.Shutdown();
+		if (Workspace is { } current)
+			await current.ShutdownAsync(cleanupWorktrees: true, cleanupTimeout: null);
 		Program.RepoPath = path;
 		Program.Host = host;
 		window.DataContext = new MainViewModel();

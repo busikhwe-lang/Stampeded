@@ -143,7 +143,11 @@ public partial class ExplorerPaneViewModel : Tool
 
 	public void EnterSinceLastPass() => workspace.Scopes.EnterSinceLastPassAsync().HandleExceptions();
 
+	public void FirstCommit() => workspace.Scopes.FirstCommitAsync().HandleExceptions();
+
 	public void StepCommit(int direction) => workspace.Scopes.StepCommitAsync(direction).HandleExceptions();
+
+	public void LastCommit() => workspace.Scopes.LastCommitAsync().HandleExceptions();
 
 	public void ExitCommitScope() => workspace.Scopes.ExitAsync().HandleExceptions();
 

@@ -481,7 +481,16 @@ public sealed class ReviewScopes(ReviewWorkspace workspace)
 	public Task StepCommitAsync(int direction)
 		=> Commit is null
 			? Task.CompletedTask
-			: ApplyCommitAsync(Math.Clamp(CommitIndex + direction, 0, Series.Count - 1));
+			: ApplyCommitAtAsync(Math.Clamp(CommitIndex + direction, 0, Series.Count - 1));
+
+	public Task FirstCommitAsync()
+		=> Commit is null ? Task.CompletedTask : ApplyCommitAtAsync(0);
+
+	public Task LastCommitAsync()
+		=> Commit is null ? Task.CompletedTask : ApplyCommitAtAsync(Series.Count - 1);
+
+	Task ApplyCommitAtAsync(int index)
+		=> index == CommitIndex ? Task.CompletedTask : ApplyCommitAsync(index);
 
 	async Task ApplyCommitAsync(int index)
 	{

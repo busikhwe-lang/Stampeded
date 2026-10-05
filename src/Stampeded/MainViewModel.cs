@@ -19,6 +19,12 @@ public partial class MainViewModel : ObservableObject
 	[ObservableProperty]
 	string windowTitle = "Stampeded!";
 
+	[ObservableProperty]
+	bool isShuttingDown;
+
+	[ObservableProperty]
+	string shutdownText = "Closing Stampeded...";
+
 	/// <summary>Whether the commands that need a compilation can be offered yet; a review is
 	/// open and readable long before its semantics have loaded.</summary>
 	[ObservableProperty]

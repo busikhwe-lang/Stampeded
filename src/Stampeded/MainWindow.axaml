@@ -101,9 +101,11 @@
           <NativeMenuItem Header="Next Uncovered Added Line  ( u )" CommandParameter="NextUncoveredItem" Click="OnNextUncovered" />
           <NativeMenuItem Header="Go to...  ( Ctrl+G )" Click="OnGoTo" />
           <NativeMenuItemSeparator />
+          <NativeMenuItem Header="First Commit" Click="OnFirstCommit" IsEnabled="{Binding InCommitScope}" />
           <NativeMenuItem Header="Next Commit  ( Ctrl+] )" Click="OnNextCommit" IsEnabled="{Binding InCommitScope}" />
           <NativeMenuItem Header="Previous Commit  ( Ctrl+[ )" Click="OnPreviousCommit"
                           IsEnabled="{Binding InCommitScope}" />
+          <NativeMenuItem Header="Last Commit" Click="OnLastCommit" IsEnabled="{Binding InCommitScope}" />
           <NativeMenuItemSeparator />
           <!-- Disabled until semantics are loaded: these are the commands that need a
                compilation, and the window opens as soon as the diff is read. -->
@@ -277,6 +279,21 @@
                     ToolTip.Tip="Start assessing without waiting; loading continues in the background" />
           </StackPanel>
           </Panel>
+        </Border>
+      </Border>
+      <Border Background="#90000000" IsVisible="{Binding IsShuttingDown}">
+        <Border Background="{DynamicResource ThemeBackgroundBrush}" CornerRadius="6" Padding="18,14"
+                MaxWidth="520" HorizontalAlignment="Center" VerticalAlignment="Center"
+                BorderBrush="#3794FF" BorderThickness="1">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <TextBlock FontWeight="SemiBold" FontSize="14" Text="Closing Stampeded" />
+              <controls:WaveSpinner SquareSize="7" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="{Binding ShutdownText}" TextWrapping="Wrap" Opacity="0.85" />
+            <TextBlock Text="Stopping servers and cleaning the review workspace. The app will close when this finishes."
+                       TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
+          </StackPanel>
         </Border>
       </Border>
     </Panel>

@@ -40,9 +40,13 @@ public partial class ExplorerPaneView : UserControl
 	void OnPassBaselineDropdown(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
 		=> Panes.PassBaselineFlyout.ShowFor(sender);
 
+	void OnFirstCommit(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Vm?.FirstCommit();
+
 	void OnPreviousCommit(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Vm?.StepCommit(-1);
 
 	void OnNextCommit(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Vm?.StepCommit(1);
+
+	void OnLastCommit(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Vm?.LastCommit();
 
 	void OnExitCommitScope(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Vm?.ExitCommitScope();
 

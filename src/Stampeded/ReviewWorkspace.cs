@@ -1489,21 +1489,53 @@ public sealed class ReviewWorkspace(string repoPath, IPullRequestHost host)
 		ComputeChangeMapAsync().HandleExceptions();
 	}
 
-	/// <summary>Stops background work and releases the Roslyn workspaces; called when the
-	/// app switches to another repository and this instance is abandoned.</summary>
+	/// <summary>Stops background work and releases the semantic providers. Process shutdown uses
+	/// the quick path: cached worktrees are a disk-cache concern, and deleting them synchronously
+	/// can hold the UI open while the app is trying to exit.</summary>
 	public void Shutdown()
+		=> ShutdownCoreAsync(cleanupWorktrees: false, cleanupTimeout: null).GetAwaiter().GetResult();
+
+	/// <summary>Stops this workspace before another repository replaces it. Unlike process exit,
+	/// a repository switch stays inside the running app, so the abandoned review worktrees can be
+	/// cleaned up before the next workspace is built.</summary>
+	public Task ShutdownAsync(bool cleanupWorktrees, TimeSpan? cleanupTimeout = null)
+		=> ShutdownCoreAsync(cleanupWorktrees, cleanupTimeout);
+
+	async Task ShutdownCoreAsync(bool cleanupWorktrees, TimeSpan? cleanupTimeout)
 	{
 		if (shutdown)
 			return;
 		shutdown = true;
+		CliLog.Write("app", cleanupWorktrees
+			? "stopping workspace and cleaning review worktrees"
+			: "stopping workspace");
 		string? headSha = HeadSha;
 		string? baseSha = BaseWorktreePath is null ? null : BaseSha;
 		sessionCts?.Cancel();
+		CliLog.Write("app", "cancelled workspace background work");
 		sessionCts?.Dispose();
 		sessionCts = null;
 		Blobs.Dispose();
 		DisposeSemantics();
-		CleanupReviewWorktreesAsync(headSha, baseSha, CancellationToken.None).GetAwaiter().GetResult();
+		CliLog.Write("app", "stopped semantic providers");
+		if (cleanupWorktrees)
+		{
+			using var busy = Busy.Begin("Cleaning review worktrees");
+			var cleanup = Task.Run(() => CleanupReviewWorktreesAsync(headSha, baseSha, CancellationToken.None));
+			if (cleanupTimeout is null)
+			{
+				await cleanup;
+			}
+			else if (await Task.WhenAny(cleanup, Task.Delay(cleanupTimeout.Value)) == cleanup)
+			{
+				await cleanup;
+			}
+			else
+			{
+				CliLog.Write("worktree", $"review worktree cleanup still running after {cleanupTimeout.Value.TotalSeconds:0}s; closing anyway");
+			}
+		}
+		CliLog.Write("app", "workspace stopped");
 	}
 
 	/// <summary>Head-side text of a file, or null when the head does not have it.</summary>

@@ -597,11 +597,17 @@ public partial class DiffDocumentView : UserControl, IReviewDocumentView
 
 	void OnCtxNextUncovered(object? s, RoutedEventArgs e) => JumpToNextUncovered();
 
+	void OnCtxFirstCommit(object? s, RoutedEventArgs e)
+		=> App.Workspace?.Scopes.FirstCommitAsync().HandleExceptions();
+
 	void OnCtxNextCommit(object? s, RoutedEventArgs e)
 		=> App.Workspace?.Scopes.StepCommitAsync(1).HandleExceptions();
 
 	void OnCtxPrevCommit(object? s, RoutedEventArgs e)
 		=> App.Workspace?.Scopes.StepCommitAsync(-1).HandleExceptions();
+
+	void OnCtxLastCommit(object? s, RoutedEventArgs e)
+		=> App.Workspace?.Scopes.LastCommitAsync().HandleExceptions();
 
 	void OnCtxHistoryOfSelection(object? s, RoutedEventArgs e) => HistoryOfSelectionCommand();
 	void OnCtxCopy(object? s, RoutedEventArgs e) => Editor.Copy();
