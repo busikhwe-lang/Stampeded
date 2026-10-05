@@ -347,7 +347,7 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 		string branch = RefName(pr, "fromRef");
 		if (branch.Length == 0)
 			throw new RefusedException($"Bitbucket did not name a source branch for pull request {number}.");
-		return $"+{branch}:refs/stampeded/pr/{number}";
+		return $"+refs/heads/{branch}:refs/stampeded/pr/{number}";
 	}
 
 	public Task<IReadOnlyList<CheckRun>> GetChecksAsync(int number, CancellationToken ct = default)
