@@ -23,6 +23,9 @@ public partial class MainViewModel : ObservableObject
 	bool isShuttingDown;
 
 	[ObservableProperty]
+	string shutdownTitle = "Closing Stampeded";
+
+	[ObservableProperty]
 	string shutdownText = "Closing Stampeded...";
 
 	/// <summary>Whether the commands that need a compilation can be offered yet; a review is

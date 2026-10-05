@@ -6,7 +6,7 @@ namespace Stampeded;
 
 internal static class Program
 {
-	/// <summary>The repository under review: first non-option argument, else the CWD;
+	/// <summary>The repository under review: -C, an explicit path argument, or the CWD;
 	/// changed at runtime by "Open Repository".</summary>
 	public static string RepoPath { get; set; } = Environment.CurrentDirectory;
 
@@ -19,6 +19,9 @@ internal static class Program
 
 	/// <summary>PR to open right after startup (--pr N), for scripted/diagnostic runs.</summary>
 	public static int? AutoOpenPr { get; private set; }
+
+	/// <summary>A git revision or range to open from the startup repository.</summary>
+	public static string? StartupRevision { get; private set; }
 
 	[STAThread]
 	public static void Main(string[] args)
@@ -39,15 +42,25 @@ internal static class Program
 		int prIndex = Array.IndexOf(args, "--pr");
 		if (prIndex >= 0 && prIndex + 1 < args.Length && int.TryParse(args[prIndex + 1], out int pr))
 			AutoOpenPr = pr;
+		int repoIndex = Array.IndexOf(args, "-C");
+		if (repoIndex >= 0 && repoIndex + 1 < args.Length)
+			RepoPath = Path.GetFullPath(args[repoIndex + 1]);
 		// The value of --pr is not the repository, which is what taking the first argument that
 		// does not start with a dash made of "--pr 4013 /path/to/repo": the number became the
 		// path, and the window opened on a repository that does not exist.
 		int prValueIndex = prIndex >= 0 ? prIndex + 1 : -1;
+		int repoValueIndex = repoIndex >= 0 ? repoIndex + 1 : -1;
 		var repoArg = args
-			.Where((a, i) => !a.StartsWith('-') && i != prValueIndex)
+			.Where((a, i) => !a.StartsWith('-') && i != prValueIndex && i != repoValueIndex)
 			.FirstOrDefault();
 		if (repoArg is not null)
-			RepoPath = Path.GetFullPath(repoArg);
+		{
+			string path = Path.GetFullPath(repoArg, RepoPath);
+			if (Directory.Exists(path))
+				RepoPath = path;
+			else
+				StartupRevision = repoArg;
+		}
 		BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 	}
 

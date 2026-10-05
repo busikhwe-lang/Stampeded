@@ -287,7 +287,7 @@
                 BorderBrush="#3794FF" BorderThickness="1">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="12">
-              <TextBlock FontWeight="SemiBold" FontSize="14" Text="Closing Stampeded" />
+              <TextBlock FontWeight="SemiBold" FontSize="14" Text="{Binding ShutdownTitle}" />
               <controls:WaveSpinner SquareSize="7" VerticalAlignment="Center" />
             </StackPanel>
             <TextBlock Text="{Binding ShutdownText}" TextWrapping="Wrap" Opacity="0.85" />

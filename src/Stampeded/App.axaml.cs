@@ -45,7 +45,22 @@ public class App : Application
 			return;
 		}
 		if (Workspace is { } current)
-			await current.ShutdownAsync(cleanupWorktrees: true, cleanupTimeout: null);
+		{
+			if (window.DataContext is MainViewModel vm)
+			{
+				vm.ShutdownTitle = "Switching Repository";
+				vm.ShutdownText = "Stopping the current review and cleaning its worktrees...";
+				vm.IsShuttingDown = true;
+			}
+			try
+			{
+				await current.ShutdownAsync(cleanupWorktrees: true, cleanupTimeout: TimeSpan.FromSeconds(10));
+			}
+			catch (Exception ex)
+			{
+				CliLog.Write("app", $"repository switch cleanup failed: {ex.Message}; opening {path} anyway");
+			}
+		}
 		Program.RepoPath = path;
 		Program.Host = host;
 		window.DataContext = new MainViewModel();
@@ -257,11 +272,60 @@ public class App : Application
 
 	static async Task OpenStartupRepositoryAsync()
 	{
+		if (!IsRepository(Program.RepoPath))
+		{
+			string detail = Program.StartupRevision is { Length: > 0 } revision
+				? $"; cannot open revision {revision} without a repository context"
+				: "";
+			CliLog.Write("app", $"startup path is not a git repository: {Program.RepoPath}{detail}");
+			return;
+		}
 		await OpenRepositoryAsync(Program.RepoPath);
-		if (Program.AutoOpenPr is { } pr && Workspace is not null)
+		if (Workspace is null)
+			return;
+		if (Program.AutoOpenPr is { } pr)
 		{
 			// --pr N means "open guided": land the wizard on Triage like Open Guided does.
 			await OpenAutoPrAsync(pr);
 		}
+		else if (Program.StartupRevision is { Length: > 0 } revision)
+		{
+			await OpenStartupRevisionAsync(revision);
+		}
+	}
+
+	static async Task OpenStartupRevisionAsync(string revision)
+	{
+		if (Workspace is not { } workspace)
+			return;
+		try
+		{
+			var (baseRef, headRef) = await StartupRangeAsync(workspace, revision);
+			CliLog.Write("action", $"startup revision {revision}: opening {baseRef}..{headRef}");
+			await workspace.OpenLocalRangeAsync(baseRef, headRef);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			string reason = ex is ToolFailedException failure ? ExternalTool.Explain(failure) : ex.Message;
+			CliLog.Write("error", $"startup revision {revision} failed: {reason}");
+			workspace.PostStatus($"Could not open startup revision {revision}: {reason}");
+		}
+	}
+
+	static async Task<(string Base, string Head)> StartupRangeAsync(ReviewWorkspace workspace, string revision)
+	{
+		string text = revision.Trim();
+		int range = text.IndexOf("..", StringComparison.Ordinal);
+		if (range >= 0)
+		{
+			string dots = text[(range + 2)..].StartsWith(".", StringComparison.Ordinal) ? "..." : "..";
+			string baseRef = text[..range];
+			string headRef = text[(range + dots.Length)..];
+			if (baseRef.Length == 0 || headRef.Length == 0)
+				throw new RefusedException($"A startup range needs both sides: {revision}");
+			return (baseRef, headRef);
+		}
+
+		return (await workspace.GetDefaultBaseAsync(), text);
 	}
 }

@@ -85,6 +85,7 @@ public partial class MainWindow : Window
 		shutdownStarted = true;
 		if (DataContext is MainViewModel vm)
 		{
+			vm.ShutdownTitle = "Closing Stampeded";
 			vm.ShutdownText = "Stopping background work and language servers...";
 			vm.IsShuttingDown = true;
 		}
@@ -99,6 +100,10 @@ public partial class MainWindow : Window
 				await workspace.ShutdownAsync(cleanupWorktrees: true, cleanupTimeout: TimeSpan.FromSeconds(10));
 				App.Workspace = null;
 			}
+		}
+		catch (Exception ex)
+		{
+			Core.Infra.CliLog.Write("app", $"shutdown cleanup failed: {ex.Message}; closing window");
 		}
 		finally
 		{
