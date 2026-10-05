@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 
 using Stampeded.Core.GitHub;
 
@@ -16,9 +17,26 @@ public partial class StartDocumentView : UserControl
 	public StartDocumentView()
 	{
 		InitializeComponent();
+		PrListBox.LayoutUpdated += (_, _) => ReportVisiblePrRows();
 	}
 
 	StartDocumentViewModel? Vm => DataContext as StartDocumentViewModel;
+	string visiblePrRows = "";
+
+	void ReportVisiblePrRows()
+	{
+		if (Vm is not { } vm)
+			return;
+		var visible = PrListBox.GetRealizedContainers()
+			.Select(container => container.DataContext)
+			.OfType<PrSummary>()
+			.ToList();
+		string key = string.Join(',', visible.Select(pr => pr.Number));
+		if (key == visiblePrRows)
+			return;
+		visiblePrRows = key;
+		vm.PrList.PrioritizeStatsFor(visible);
+	}
 
 	void OnPrRefresh(object? sender, RoutedEventArgs e) => Vm?.PrList.LoadAsync().HandleExceptions();
 

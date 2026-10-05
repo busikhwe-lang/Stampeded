@@ -31,6 +31,8 @@ public class PrListPaneViewModel : Tool
 	readonly ReviewWorkspace workspace;
 	CancellationTokenSource? statsCts;
 	int loadVersion;
+	readonly HashSet<int> visibleStatsPriority = [];
+	readonly SemaphoreSlim statsPriorityChanged = new(0);
 	/// <summary>Whose pull request it is - "GitHub", "Azure DevOps" - for the headers and
 	/// tooltips that name the host.</summary>
 	public string HostName => workspace.HostName;
@@ -127,32 +129,33 @@ public class PrListPaneViewModel : Tool
 		foreach (var pr in rows)
 			pr.BeginStatsLoading();
 		State.StatsLoading = rows.Count > 0;
-		var loaded = new Dictionary<int, PrDiffStats>();
+		var pending = rows.ToDictionary(pr => pr.Number);
 		try
 		{
-			foreach (var pr in rows)
+			while (pending.Count > 0)
 			{
 				ct.ThrowIfCancellationRequested();
 				if (version != loadVersion)
 					return;
+				PrSummary? pr = NextStatsRow(rows, pending, allowDeferred: false);
+				if (pr is null)
+				{
+					await statsPriorityChanged.WaitAsync(TimeSpan.FromMilliseconds(900), ct);
+					pr = NextStatsRow(rows, pending, allowDeferred: true);
+					if (pr is null)
+						continue;
+				}
 				try
 				{
 					var diff = await stats.GetDiffStatsAsync(pr.Number, ct);
-					loaded[pr.Number] = diff;
+					pr.SetDiffStats(diff);
 				}
 				catch (Exception ex) when (ex is ToolFailedException or System.Text.Json.JsonException)
 				{
 					CliLog.Write("host", $"pull request #{pr.Number} line counts unavailable: {ex.Message}");
-				}
-			}
-			if (version != loadVersion)
-				return;
-			foreach (var pr in rows)
-			{
-				if (loaded.TryGetValue(pr.Number, out var diff))
-					pr.SetDiffStats(diff);
-				else
 					pr.EndStatsLoading();
+				}
+				pending.Remove(pr.Number);
 			}
 		}
 		finally
@@ -160,6 +163,23 @@ public class PrListPaneViewModel : Tool
 			if (version == loadVersion)
 				State.StatsLoading = false;
 		}
+	}
+
+	PrSummary? NextStatsRow(IReadOnlyList<PrSummary> rows, Dictionary<int, PrSummary> pending, bool allowDeferred)
+	{
+		foreach (var pr in rows)
+			if (pending.ContainsKey(pr.Number) && visibleStatsPriority.Contains(pr.Number))
+				return pr;
+		return allowDeferred ? rows.FirstOrDefault(pr => pending.ContainsKey(pr.Number)) : null;
+	}
+
+	public void PrioritizeStatsFor(IEnumerable<PrSummary> visibleRows)
+	{
+		visibleStatsPriority.Clear();
+		foreach (var pr in visibleRows)
+			visibleStatsPriority.Add(pr.Number);
+		if (statsPriorityChanged.CurrentCount == 0)
+			statsPriorityChanged.Release();
 	}
 
 	public void Open(PrSummary pr)
