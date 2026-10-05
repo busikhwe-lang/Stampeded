@@ -6,21 +6,29 @@ namespace Stampeded.Core.Infra;
 public class ToolFailedException : Exception
 {
 	public ToolFailedException(string tool, int exitCode, string stdErr)
-		: this(tool, exitCode, stdErr, $"{tool} exited with code {exitCode}: {stdErr.Trim()}")
+		: this(tool, exitCode, stdErr, "", $"{tool} exited with code {exitCode}: {stdErr.Trim()}")
 	{
 	}
 
-	protected ToolFailedException(string tool, int exitCode, string stdErr, string message)
+	public ToolFailedException(string tool, int exitCode, string stdErr, string stdOut)
+		: this(tool, exitCode, stdErr, stdOut,
+			$"{tool} exited with code {exitCode}: {(stdErr.Trim().Length > 0 ? stdErr : stdOut).Trim()}")
+	{
+	}
+
+	protected ToolFailedException(string tool, int exitCode, string stdErr, string stdOut, string message)
 		: base(message)
 	{
 		Tool = tool;
 		ExitCode = exitCode;
 		StdErr = stdErr;
+		StdOut = stdOut;
 	}
 
 	public string Tool { get; }
 	public int ExitCode { get; }
 	public string StdErr { get; }
+	public string StdOut { get; }
 }
 
 /// <summary>
@@ -33,7 +41,7 @@ public class ToolFailedException : Exception
 /// in it, did. A caller that wants to tell them apart still can, by catching this first.
 /// </summary>
 public sealed class RefusedException(string message)
-	: ToolFailedException("stampeded", Refused, message, message)
+	: ToolFailedException("stampeded", Refused, message, "", message)
 {
 	/// <summary>The exit code a refusal reports. No process ran, so it is not one of anyone's:
 	/// -1 already means "the tool never started", and this is "the tool was never asked".</summary>
@@ -93,7 +101,7 @@ public static class ExternalTool
 		CliLog.Write(exe, $"{argsText} -> exit {result.ExitCode} ({watch.ElapsedMilliseconds} ms)"
 			+ (failed ? ": " + FailureReason(result.StandardError, result.StandardOutput) : ""));
 		if (failed)
-			throw new ToolFailedException(exe, result.ExitCode, result.StandardError);
+			throw new ToolFailedException(exe, result.ExitCode, result.StandardError, result.StandardOutput);
 		return result.StandardOutput;
 	}
 
@@ -105,7 +113,7 @@ public static class ExternalTool
 	/// </summary>
 	public static string Explain(ToolFailedException failure)
 	{
-		string reason = FailureReason(failure.StdErr, "");
+		string reason = FailureReason(failure.StdErr, failure.StdOut);
 		return reason == "no output" ? failure.Message : reason;
 	}
 

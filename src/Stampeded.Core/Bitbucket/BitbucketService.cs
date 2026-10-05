@@ -102,12 +102,39 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 			}
 			args.Add(url);
 			CliLog.Write("bitbucket", $"{method} {RouteForLog(url)}");
-			return await ExternalTool.RunAsync("curl", args, repoPath, ct);
+			try
+			{
+				return await ExternalTool.RunAsync("curl", args, repoPath, ct);
+			}
+			catch (ToolFailedException ex)
+			{
+				LogCurlFailure(ex);
+				throw;
+			}
 		}
 		finally
 		{
 			if (file is not null && File.Exists(file))
 				File.Delete(file);
+		}
+	}
+
+	static void LogCurlFailure(ToolFailedException ex)
+	{
+		foreach (string line in ErrorLines(ex.StdErr, ex.StdOut))
+			CliLog.Write("curl", line);
+	}
+
+	static IEnumerable<string> ErrorLines(params string[] streams)
+	{
+		foreach (string stream in streams)
+		{
+			foreach (string line in stream.ReplaceLineEndings("\n").Split('\n'))
+			{
+				string text = line.TrimEnd();
+				if (text.Length > 0)
+					yield return text;
+			}
 		}
 	}
 
