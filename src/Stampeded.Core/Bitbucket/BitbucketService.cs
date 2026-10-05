@@ -392,11 +392,36 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 
 	public async Task<IReadOnlyList<PostedComment>> GetReviewCommentsAsync(int number, CancellationToken ct = default)
 	{
-		var comments = await PageAsync($"{ApiBase}/pull-requests/{number}/comments", ct);
+		var comments = await PrCommentsAsync(number, ct);
 		var posted = new List<PostedComment>();
 		foreach (var comment in comments)
 			AddComment(posted, comment, inheritedAnchor: null);
+		CliLog.Write("bitbucket", $"read {comments.Count} pull request comment root(s), {posted.Count} anchored comment(s)");
 		return posted;
+	}
+
+	async Task<IReadOnlyList<JsonElement>> PrCommentsAsync(int number, CancellationToken ct)
+	{
+		var byId = new Dictionary<long, JsonElement>();
+		foreach (var comment in await PageAsync($"{ApiBase}/pull-requests/{number}/comments?anchorState=ALL", ct))
+			Add(comment);
+		try
+		{
+			foreach (var comment in await PageAsync($"{ApiBase}/pull-requests/{number}/comments?anchorState=ALL&state=RESOLVED", ct))
+				Add(comment);
+		}
+		catch (ToolFailedException ex)
+		{
+			CliLog.Write("bitbucket", $"could not read resolved comments separately: {ExternalTool.Explain(ex)}");
+		}
+		return [.. byId.Values];
+
+		void Add(JsonElement comment)
+		{
+			long id = Long(comment, "id");
+			if (id != 0)
+				byId[id] = comment;
+		}
 	}
 
 	void AddComment(List<PostedComment> posted, JsonElement comment, JsonElement? inheritedAnchor)
@@ -453,7 +478,7 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 
 	async Task<IReadOnlyList<ThreadResolution>> ReadThreadResolutionsAsync(int number, CancellationToken ct)
 	{
-		var comments = await PageAsync($"{ApiBase}/pull-requests/{number}/comments", ct);
+		var comments = await PrCommentsAsync(number, ct);
 		var resolutions = new List<ThreadResolution>();
 		foreach (var comment in comments)
 		{
