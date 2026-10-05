@@ -436,17 +436,9 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 	async Task<IReadOnlyList<JsonElement>> PrCommentsAsync(int number, CancellationToken ct)
 	{
 		var byId = new Dictionary<long, JsonElement>();
-		foreach (var comment in await PageAsync($"{ApiBase}/pull-requests/{number}/comments?anchorState=ALL", ct))
-			Add(comment);
-		try
-		{
-			foreach (var comment in await PageAsync($"{ApiBase}/pull-requests/{number}/comments?anchorState=ALL&state=RESOLVED", ct))
+		foreach (var activity in await PageAsync($"{ApiBase}/pull-requests/{number}/activities", ct))
+			if (Node(activity, "comment") is { ValueKind: JsonValueKind.Object } comment)
 				Add(comment);
-		}
-		catch (ToolFailedException ex)
-		{
-			CliLog.Write("bitbucket", $"could not read resolved comments separately: {ExternalTool.Explain(ex)}");
-		}
 		return [.. byId.Values];
 
 		void Add(JsonElement comment)
