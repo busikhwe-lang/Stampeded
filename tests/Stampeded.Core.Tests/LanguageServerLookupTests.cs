@@ -46,6 +46,24 @@ public class LanguageServerLookupTests
 		Assert.That(LanguageServers.ExtensionsByLanguage["cpp"],
 			Is.SupersetOf(new[] { ".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx" }));
 	}
+
+	[Test]
+	public void CppCompileCommandsAreReadFromSourceCheckoutBuildDirectories()
+	{
+		string temp = Path.Combine(Path.GetTempPath(), "stampeded-cpp-lsp-" + Guid.NewGuid().ToString("N"));
+		try
+		{
+			string build = Path.Combine(temp, "build");
+			Directory.CreateDirectory(build);
+			File.WriteAllText(Path.Combine(build, "compile_commands.json"), "[]");
+
+			Assert.That(LanguageServers.CompileCommandsDir(temp), Is.EqualTo(build));
+		}
+		finally
+		{
+			TempDirectory.Delete(temp);
+		}
+	}
 }
 
 /// <summary>

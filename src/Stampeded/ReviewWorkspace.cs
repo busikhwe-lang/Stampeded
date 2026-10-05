@@ -2323,7 +2323,7 @@ public sealed class ReviewWorkspace(string repoPath, IPullRequestHost host)
 				if (language == "python")
 					await LoadPythonAsync(languageExtensions, ct);
 				else if (language == "cpp")
-					await LoadConfiguredLanguageAsync("C++", LanguageServers.Cpp(), languageExtensions, ct);
+					await LoadConfiguredLanguageAsync("C++", LanguageServers.Cpp(RepoPath), languageExtensions, ct);
 			}
 			if (!startedAny)
 			{

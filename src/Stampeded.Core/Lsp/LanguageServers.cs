@@ -26,7 +26,7 @@ public static class LanguageServers
 	/// The C/C++ server to run, or null when there is none to run. <c>STAMPEDED_CPP_LSP</c>
 	/// overrides the search with a command line of its own.
 	/// </summary>
-	public static LspServerSpec? Cpp()
+	public static LspServerSpec? Cpp(string repoPath)
 	{
 		if (FromEnvironment("STAMPEDED_CPP_LSP") is { } configured)
 			return configured;
@@ -35,8 +35,31 @@ public static class LanguageServers
 			CliLog.Write("clangd", "no C/C++ language server on PATH");
 			return null;
 		}
-		CliLog.Write("clangd", $"server: {clangd} --background-index (on PATH)");
-		return new LspServerSpec("clangd", clangd, ["--background-index"]);
+		var arguments = new List<string> { "--background-index" };
+		if (CompileCommandsDir(repoPath) is { } compileCommandsDir)
+			arguments.Add("--compile-commands-dir=" + compileCommandsDir);
+		CliLog.Write("clangd", $"server: {clangd} {string.Join(' ', arguments)} (on PATH)");
+		return new LspServerSpec("clangd", clangd, [.. arguments]);
+	}
+
+	public static string? CompileCommandsDir(string repoPath)
+	{
+		foreach (string candidate in new[] {
+			repoPath,
+			Path.Combine(repoPath, "build"),
+			Path.Combine(repoPath, "out", "build"),
+		}.Concat(Directory.Exists(repoPath)
+			? Directory.EnumerateDirectories(repoPath, "cmake-build-*", SearchOption.TopDirectoryOnly)
+			: []))
+		{
+			if (File.Exists(Path.Combine(candidate, "compile_commands.json")))
+			{
+				CliLog.Write("clangd", $"compile commands: {candidate}");
+				return candidate;
+			}
+		}
+		CliLog.Write("clangd", "no compile_commands.json found in the source checkout; clangd will use its fallback flags");
+		return null;
 	}
 
 	/// <summary>
