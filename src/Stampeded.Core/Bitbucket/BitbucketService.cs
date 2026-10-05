@@ -83,6 +83,7 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 	async Task<string> CurlAsync(string method, string url, string? jsonBody, CancellationToken ct)
 	{
 		string? file = null;
+		var watch = System.Diagnostics.Stopwatch.StartNew();
 		try
 		{
 			var args = new List<string> {
@@ -104,10 +105,14 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 			CliLog.Write("bitbucket", $"{method} {RouteForLog(url)}");
 			try
 			{
-				return await ExternalTool.RunAsync("curl", args, repoPath, ct);
+				string output = await ExternalTool.RunAsync("curl", args, repoPath, ct, logCommand: false);
+				CliLog.Write("bitbucket", $"{method} {RouteForLog(url)} -> exit 0 ({watch.ElapsedMilliseconds} ms)");
+				return output;
 			}
 			catch (ToolFailedException ex)
 			{
+				CliLog.Write("bitbucket", $"{method} {RouteForLog(url)} -> exit {ex.ExitCode} ({watch.ElapsedMilliseconds} ms): "
+					+ ExternalTool.FailureReason(ex.StdErr, ex.StdOut));
 				LogCurlFailure(ex);
 				throw;
 			}
@@ -121,7 +126,8 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 
 	static void LogCurlFailure(ToolFailedException ex)
 	{
-		foreach (string line in ErrorLines(ex.StdErr, ex.StdOut))
+		string[] streams = ex.StdOut.Trim().Length == 0 ? [ex.StdErr] : [ex.StdOut];
+		foreach (string line in ErrorLines(streams))
 			CliLog.Write("curl", line);
 	}
 
