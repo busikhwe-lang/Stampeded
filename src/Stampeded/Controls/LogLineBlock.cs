@@ -27,6 +27,8 @@ public sealed class LogLineBlock : TextBlock
 
 	public static readonly StyledProperty<string?> LineProperty =
 		AvaloniaProperty.Register<LogLineBlock, string?>(nameof(Line));
+	public static readonly StyledProperty<IBrush?> LineBrushProperty =
+		AvaloniaProperty.Register<LogLineBlock, IBrush?>(nameof(LineBrush));
 
 	/// <summary>The line as it was logged. Set by the list's item template, and set again when
 	/// the row is reused for another line.</summary>
@@ -35,17 +37,26 @@ public sealed class LogLineBlock : TextBlock
 		set => SetValue(LineProperty, value);
 	}
 
+	public IBrush? LineBrush {
+		get => GetValue(LineBrushProperty);
+		set => SetValue(LineBrushProperty, value);
+	}
+
 	IReadOnlyList<LogFileRef> refs = [];
 
 	protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
 	{
 		base.OnPropertyChanged(change);
-		if (change.Property == LineProperty)
+		if (change.Property == LineProperty || change.Property == LineBrushProperty)
 			Build(Line ?? "");
 	}
 
 	void Build(string text)
 	{
+		if (LineBrush is { } brush)
+			Foreground = brush;
+		else
+			ClearValue(ForegroundProperty);
 		refs = LogFileRefs.Find(text);
 		Inlines?.Clear();
 		if (refs.Count == 0)

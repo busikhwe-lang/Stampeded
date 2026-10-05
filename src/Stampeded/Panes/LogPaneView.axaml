@@ -16,7 +16,7 @@
              FontFamily="monospace" FontSize="11" KeyDown="OnKeyDown">
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="panes:LogLineRow">
-          <controls:LogLineBlock Line="{Binding Text}" Foreground="{Binding Brush}" />
+          <controls:LogLineBlock Line="{Binding Text}" LineBrush="{Binding Brush}" />
         </DataTemplate>
       </ListBox.ItemTemplate>
       <ListBox.ContextMenu>
