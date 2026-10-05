@@ -620,9 +620,30 @@ public sealed class ReviewWorkspace(string repoPath, IPullRequestHost host)
 		else
 			await LoadCSharpInProcessAsync(baseSha, ct);
 		LoadOtherLanguagesAsync(ct).HandleExceptions();
+		if (!Scopes.InScope)
+			await ApplyDirtySemanticsAsync(ct);
 		using (Busy.Begin("Computing change map"))
 			await ComputeChangeMapAsync();
 		await PruneCachedWorktreesAsync(ct);
+	}
+
+	async Task ApplyDirtySemanticsAsync(CancellationToken ct)
+	{
+		if (DirtyWorktreePath is not { } dirty)
+			return;
+
+		var headText = new Dictionary<string, string>(StringComparer.Ordinal);
+		foreach (var file in Files.Where(f => !f.IsBinary && f.Kind != FileChangeKind.Deleted))
+		{
+			string absolute = Path.Combine(dirty, file.NewPath);
+			if (File.Exists(absolute))
+				headText[file.NewPath] = await File.ReadAllTextAsync(absolute, ct);
+		}
+
+		Semantics?.SetTextOverlay(headText);
+		foreach (var language in languages)
+			language.Head.SetTextOverlay(headText);
+		SemanticsChanged?.Invoke();
 	}
 
 	/// <summary>How many worktrees of a repository outlive the review that made them. Enough
@@ -2390,6 +2411,8 @@ public sealed class ReviewWorkspace(string repoPath, IPullRequestHost host)
 			attached = true;
 			if (Scopes.InScope)
 				await ApplyScopeSemanticsAsync();
+			else if (DirtyWorktreePath is not null)
+				await ApplyDirtySemanticsAsync(ct);
 			else
 				SemanticsChanged?.Invoke();
 			return true;

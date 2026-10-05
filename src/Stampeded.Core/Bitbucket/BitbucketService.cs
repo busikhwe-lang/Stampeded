@@ -449,10 +449,51 @@ public sealed class BitbucketService(string repoPath, string baseUrl, string pro
 	}
 
 	public Task<IReadOnlyList<ThreadResolution>> GetThreadResolutionsAsync(int number, CancellationToken ct = default)
-		=> Task.FromResult<IReadOnlyList<ThreadResolution>>([]);
+		=> ReadThreadResolutionsAsync(number, ct);
 
-	public Task SetThreadResolvedAsync(string threadId, bool resolved, CancellationToken ct = default)
-		=> throw new RefusedException("Bitbucket Data Center comment resolution is not supported yet.");
+	async Task<IReadOnlyList<ThreadResolution>> ReadThreadResolutionsAsync(int number, CancellationToken ct)
+	{
+		var comments = await PageAsync($"{ApiBase}/pull-requests/{number}/comments", ct);
+		var resolutions = new List<ThreadResolution>();
+		foreach (var comment in comments)
+		{
+			long id = Long(comment, "id");
+			if (id == 0)
+				continue;
+			var ids = new List<long> { id };
+			CollectChildIds(comment, ids);
+			resolutions.Add(new ThreadResolution(
+				$"{number}/{id}", Str(comment, "state") == "RESOLVED", ids));
+		}
+		return resolutions;
+	}
+
+	static void CollectChildIds(JsonElement comment, List<long> ids)
+	{
+		foreach (var child in Array(Node(comment, "comments")))
+		{
+			long id = Long(child, "id");
+			if (id != 0)
+				ids.Add(id);
+			CollectChildIds(child, ids);
+		}
+	}
+
+	public async Task SetThreadResolvedAsync(string threadId, bool resolved, CancellationToken ct = default)
+	{
+		string[] parts = threadId.Split('/');
+		if (parts.Length != 2 || !int.TryParse(parts[0], out int number) || !long.TryParse(parts[1], out long commentId))
+			throw new RefusedException($"Not a Bitbucket Data Center thread id: {threadId}");
+
+		using var comment = await JsonAsync("GET", $"{ApiBase}/pull-requests/{number}/comments/{commentId}", null, ct);
+		string body = JsonSerializer.Serialize(new {
+			version = Int(comment.RootElement, "version"),
+			text = Str(comment.RootElement, "text") ?? "",
+			severity = Str(comment.RootElement, "severity") ?? "NORMAL",
+			state = resolved ? "RESOLVED" : "OPEN",
+		});
+		using var _ = await JsonAsync("PUT", $"{ApiBase}/pull-requests/{number}/comments/{commentId}", body, ct);
+	}
 
 	public async Task SubmitReviewAsync(int number, ReviewSubmission submission, CancellationToken ct = default)
 	{
