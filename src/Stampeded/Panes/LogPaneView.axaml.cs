@@ -16,11 +16,22 @@ public partial class LogPaneView : UserControl
 		InitializeComponent();
 	}
 
+	LogPaneViewModel? subscribed;
+
 	protected override void OnDataContextChanged(EventArgs e)
 	{
 		base.OnDataContextChanged(e);
+		if (subscribed is not null)
+			subscribed.VisibleLines.CollectionChanged -= OnLinesChanged;
 		if (DataContext is LogPaneViewModel vm)
-			vm.Lines.CollectionChanged += OnLinesChanged;
+		{
+			subscribed = vm;
+			vm.VisibleLines.CollectionChanged += OnLinesChanged;
+		}
+		else
+		{
+			subscribed = null;
+		}
 	}
 
 	void OnLinesChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -37,6 +48,13 @@ public partial class LogPaneView : UserControl
 
 	void OnKeyDown(object? sender, KeyEventArgs e)
 	{
+		if (e.Key == Key.F && e.KeyModifiers == KeyModifiers.Control)
+		{
+			FilterBox.Focus();
+			FilterBox.SelectAll();
+			e.Handled = true;
+			return;
+		}
 		if (e.Key == Key.C && e.KeyModifiers == KeyModifiers.Control)
 		{
 			CopySelected();
@@ -44,12 +62,20 @@ public partial class LogPaneView : UserControl
 		}
 	}
 
+	void OnFilterKeyDown(object? sender, KeyEventArgs e)
+	{
+		if (e.Key != Key.Escape || DataContext is not LogPaneViewModel vm)
+			return;
+		vm.FilterText = "";
+		e.Handled = true;
+	}
+
 	void OnCopySelected(object? sender, RoutedEventArgs e) => CopySelected();
 
 	void OnCopyAll(object? sender, RoutedEventArgs e)
 	{
 		if (DataContext is LogPaneViewModel vm)
-			CopyToClipboard(string.Join('\n', vm.Lines));
+			CopyToClipboard(string.Join('\n', vm.VisibleLines.Select(line => line.Text)));
 	}
 
 	void CopySelected()
@@ -57,8 +83,8 @@ public partial class LogPaneView : UserControl
 		if (DataContext is not LogPaneViewModel vm || LogList.SelectedItems is not { Count: > 0 } selected)
 			return;
 		// SelectedItems reflects selection order; copy in display order instead.
-		var chosen = selected.OfType<string>().ToHashSet();
-		CopyToClipboard(string.Join('\n', vm.Lines.Where(chosen.Contains)));
+		var chosen = selected.OfType<LogLineRow>().ToHashSet();
+		CopyToClipboard(string.Join('\n', vm.VisibleLines.Where(chosen.Contains).Select(line => line.Text)));
 	}
 
 	void CopyToClipboard(string text)

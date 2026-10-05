@@ -2,17 +2,21 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:panes="using:Stampeded.Panes"
              xmlns:controls="using:Stampeded.Controls"
-             xmlns:system="using:System"
              x:Class="Stampeded.Panes.LogPaneView"
              x:DataType="panes:LogPaneViewModel">
   <DockPanel>
-    <Button DockPanel.Dock="Top" HorizontalAlignment="Right" Margin="4,2" Content="Clear"
-            Click="OnClear" />
-    <ListBox x:Name="LogList" ItemsSource="{Binding Lines}" SelectionMode="Multiple"
+    <DockPanel DockPanel.Dock="Top" Margin="4,2">
+      <Button DockPanel.Dock="Right" Margin="6,0,0,0" Content="Clear" Click="OnClear" />
+      <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="#8B949E"
+                 Text="{Binding CountText}" />
+      <TextBox x:Name="FilterBox" MinWidth="220" PlaceholderText="Search log" KeyDown="OnFilterKeyDown"
+               Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+    </DockPanel>
+    <ListBox x:Name="LogList" ItemsSource="{Binding VisibleLines}" SelectionMode="Multiple"
              FontFamily="monospace" FontSize="11" KeyDown="OnKeyDown">
       <ListBox.ItemTemplate>
-        <DataTemplate x:DataType="system:String">
-          <controls:LogLineBlock Line="{Binding}" />
+        <DataTemplate x:DataType="panes:LogLineRow">
+          <controls:LogLineBlock Line="{Binding Text}" Foreground="{Binding Brush}" />
         </DataTemplate>
       </ListBox.ItemTemplate>
       <ListBox.ContextMenu>
