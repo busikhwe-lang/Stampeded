@@ -214,6 +214,19 @@
     <Style Selector="MenuItem">
       <Setter Property="ToolTip.ShowOnDisabled" Value="True" />
     </Style>
+    <!-- A scrollbar's thumb in a grey of its own. The Simple theme takes thumb and track from
+         two neighbouring palette brushes, which the quiet palette above leaves a shade apart -
+         and its pressed thumb is lighter than the track - so a list did not show that it
+         scrolls. Translucent, so the one grey stands out on the light track and the dark. -->
+    <Style Selector="ScrollBar /template/ Thumb#thumb">
+      <Setter Property="Background" Value="#70808080" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb#thumb:pointerover">
+      <Setter Property="Background" Value="#A0808080" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb#thumb:pressed">
+      <Setter Property="Background" Value="#C8808080" />
+    </Style>
     <Style Selector="OverlayPopupHost">
       <Setter Property="RenderTransformOrigin" Value="0%,0%" />
       <Setter Property="RenderTransform" Value="{x:Static local:ZoomState.PopupScale}" />
